@@ -1,0 +1,105 @@
+spring:
+  application:
+    name: api-service
+
+  # Redis (Upstash) 설정 - Gateway에서 JWT 블랙리스트 및 Rate Limit에 사용, OAuth Service에서도 사용
+  data:
+    redis:
+      host: ${UPSTASH_REDIS_HOST}
+      port: ${UPSTASH_REDIS_PORT}
+      password: ${UPSTASH_REDIS_PASSWORD}
+      ssl:
+        enabled: true
+      timeout: 2000ms
+      lettuce:
+        pool:
+          max-active: 8
+          max-idle: 8
+          min-idle: 0
+
+  # Neon PostgreSQL 데이터베이스 설정 (User Service용)
+  datasource:
+    url: jdbc:postgresql://${NEON_DB_HOST}/${NEON_DB_NAME}
+    username: ${NEON_DB_USER}
+    password: ${NEON_DB_PASSWORD}
+    driver-class-name: org.postgresql.Driver
+
+  # JPA 설정 (User Service용)
+  jpa:
+    hibernate:
+      ddl-auto: update # 개발 환경용 (운영 환경에서는 validate 권장)
+    show-sql: true
+    properties:
+      hibernate:
+        dialect: org.hibernate.dialect.PostgreSQLDialect
+        format_sql: true
+
+# OAuth 설정 (Kakao, Naver, Google)
+kakao:
+  rest-api-key: ${KAKAO_REST_API_KEY}
+  redirect-uri: ${KAKAO_REDIRECT_URI}
+
+naver:
+  client-id: ${NAVER_CLIENT_ID}
+  client-secret: ${NAVER_CLIENT_SECRET}
+  redirect-uri: ${NAVER_REDIRECT_URI}
+
+google:
+  client-id: ${GOOGLE_CLIENT_ID}
+  client-secret: ${GOOGLE_CLIENT_SECRET}
+  redirect-uri: ${GOOGLE_REDIRECT_URI}
+
+# JWT 설정 (Gateway 및 OAuth Service에서 사용)
+jwt:
+  secret: ${JWT_SECRET}
+  expiration: ${JWT_EXPIRATION:86400000} # 기본 24시간 (24시간)
+  refresh-expiration: ${JWT_REFRESH_EXPIRATION:604800000} # 기본 7일 (7일)
+
+# Eureka 클라이언트 비활성화
+eureka:
+  client:
+    enabled: false
+    fetch-registry: false
+    register-with-eureka: false
+
+# 서버 포트
+server:
+  port: 8080
+
+# Swagger UI 설정: /docs 경로로 접근
+# OpenApiConfig.java의 설정을 application.yaml로 이동
+# - Gateway API와 ML Service (FastAPI)의 OpenAPI를 통합하여 표시
+# - urls 설정을 통해 여러 서비스의 API 문서를 드롭다운으로 선택 가능
+springdoc:
+  api-docs:
+    path: /v3/api-docs
+  swagger-ui:
+    path: /docs
+    enabled: true
+    operations-sorter: method
+    tags-sorter: alpha
+    use-root-path: false
+    persist-authorization: true
+    show-actuator: false
+    default-flat-param-object: true
+    writer-with-order-by-keys: true
+    # 여러 서비스의 OpenAPI 통합 (OpenApiConfig.java에서 이동)
+    # Swagger UI 상단의 드롭다운에서 서비스를 선택하여 API 문서 확인 가능
+    urls:
+      - name: API Service
+        url: /v3/api-docs
+        display-name: API Service
+      - name: ML Service
+        url: /api/ml/openapi.json
+        display-name: ML Service (FastAPI)
+      - name: Transformer Service
+        url: /api/transformer/openapi.json
+        display-name: Transformer Service (FastAPI)
+
+# 로깅 레벨 설정
+logging:
+  level:
+    root: INFO
+    kr.ai.kjun.api: DEBUG
+  pattern:
+    console: "%d{yyyy-MM-dd HH:mm:ss} - %msg%n"
