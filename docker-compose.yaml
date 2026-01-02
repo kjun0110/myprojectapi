@@ -1,0 +1,21 @@
+services:
+  api-service:
+    # image: kjun0110/api.kjun.ai.kr:v1
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: api-service
+    ports:
+      - "8080:8080"
+    env_file:
+      - ../.env
+
+    # env_file에서 로드된 환경 변수가 자동으로 컨테이너에 전달됩니다.
+    # application.yaml에서 ${변수명}으로 참조하면 env_file의 값이 사용됩니다.
+    networks:
+      - api-network
+
+networks:
+  api-network:
+    driver: bridge
+
