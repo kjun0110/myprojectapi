@@ -74,7 +74,7 @@ jobs:
                       docker run -d --name $CONTAINER \
                           --restart unless-stopped \
                           -p 8080:8080 \
-                          --env-file $HOME/.env \
+                          --env-file /home/ubuntu/api/.env \
                           --network api-network \
                           $IMAGE
 
