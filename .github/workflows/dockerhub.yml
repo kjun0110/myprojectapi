@@ -63,6 +63,9 @@ jobs:
 
                       docker pull $IMAGE
 
+                      # 네트워크가 없으면 생성
+                      docker network create api-network || true
+
                       # 기존 컨테이너 중지/삭제 (없어도 에러 안나게)
                       docker stop $CONTAINER || true
                       docker rm $CONTAINER || true
@@ -71,7 +74,7 @@ jobs:
                       docker run -d --name $CONTAINER \
                           --restart unless-stopped \
                           -p 8080:8080 \
-                          --env-file ../.env \
+                          --env-file $HOME/.env \
                           --network api-network \
                           $IMAGE
 
