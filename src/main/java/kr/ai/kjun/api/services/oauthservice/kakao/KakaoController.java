@@ -21,6 +21,7 @@ public class KakaoController {
     private final JwtTokenProvider jwtTokenProvider;
     private final UserManagementService userManagementService;
     private final RefreshTokenService refreshTokenService;
+    private final kr.ai.kjun.api.services.oauthservice.jwt.AccessTokenService accessTokenService;
 
     @Value("${FRONT_LOGIN_CALLBACK_URL}")
     private String frontendLoginCallbackUrl;
@@ -29,11 +30,13 @@ public class KakaoController {
             KakaoService kakaoService,
             JwtTokenProvider jwtTokenProvider,
             UserManagementService userManagementService,
-            RefreshTokenService refreshTokenService) {
+            RefreshTokenService refreshTokenService,
+            kr.ai.kjun.api.services.oauthservice.jwt.AccessTokenService accessTokenService) {
         this.kakaoService = kakaoService;
         this.jwtTokenProvider = jwtTokenProvider;
         this.userManagementService = userManagementService;
         this.refreshTokenService = refreshTokenService;
+        this.accessTokenService = accessTokenService;
     }
 
     // 카카오 로그인 URL 반환
@@ -89,7 +92,10 @@ public class KakaoController {
                     (String) savedUser.get("email"),
                     (String) savedUser.get("nickname"));
 
-            // Refresh Token 생성 및 Redis에 저장
+            // Access Token을 Upstash Redis에 저장
+            accessTokenService.saveAccessToken(userId, jwtToken);
+
+            // Refresh Token 생성 및 Neon DB에 저장
             String refreshToken = refreshTokenService.generateAndSaveRefreshToken(userId);
 
             System.out.println("✅ [카카오 콜백] 로그인 성공 - User ID: " + userId);
@@ -135,7 +141,10 @@ public class KakaoController {
                     (String) savedUser.get("email"),
                     (String) savedUser.get("nickname"));
 
-            // Refresh Token 생성 및 Redis에 저장
+            // Access Token을 Upstash Redis에 저장
+            accessTokenService.saveAccessToken(userId, jwtToken);
+
+            // Refresh Token 생성 및 Neon DB에 저장
             String refreshToken = refreshTokenService.generateAndSaveRefreshToken(userId);
 
             System.out.println("✅ [카카오 로그인] 성공 - User ID: " + userId);
@@ -194,7 +203,7 @@ public class KakaoController {
     // 에러 리다이렉트
     private ResponseEntity<?> redirectToError(String error) {
         String encodedError = URLEncoder.encode(error, StandardCharsets.UTF_8);
-        String errorUrl = frontendLoginCallbackUrl + "/auth/kakao/error?error=" + encodedError;
+        String errorUrl = frontendLoginCallbackUrl + "/oauth/kakao/error?error=" + encodedError;
         return ResponseEntity.status(HttpStatus.FOUND)
                 .header("Location", errorUrl)
                 .build();

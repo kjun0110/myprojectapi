@@ -21,6 +21,7 @@ public class GoogleController {
     private final JwtTokenProvider jwtTokenProvider;
     private final UserManagementService userManagementService;
     private final RefreshTokenService refreshTokenService;
+    private final kr.ai.kjun.api.services.oauthservice.jwt.AccessTokenService accessTokenService;
 
     @Value("${FRONT_LOGIN_CALLBACK_URL}")
     private String frontendLoginCallbackUrl;
@@ -29,11 +30,13 @@ public class GoogleController {
             GoogleService googleService,
             JwtTokenProvider jwtTokenProvider,
             UserManagementService userManagementService,
-            RefreshTokenService refreshTokenService) {
+            RefreshTokenService refreshTokenService,
+            kr.ai.kjun.api.services.oauthservice.jwt.AccessTokenService accessTokenService) {
         this.googleService = googleService;
         this.jwtTokenProvider = jwtTokenProvider;
         this.userManagementService = userManagementService;
         this.refreshTokenService = refreshTokenService;
+        this.accessTokenService = accessTokenService;
     }
 
     // 구글 로그인 URL 반환
@@ -89,7 +92,10 @@ public class GoogleController {
                     (String) savedUser.get("email"),
                     (String) savedUser.get("nickname"));
 
-            // Refresh Token 생성 및 Redis에 저장
+            // Access Token을 Upstash Redis에 저장
+            accessTokenService.saveAccessToken(userId, jwtToken);
+
+            // Refresh Token 생성 및 Neon DB에 저장
             String refreshToken = refreshTokenService.generateAndSaveRefreshToken(userId);
 
             System.out.println("✅ [구글 콜백] 로그인 성공 - User ID: " + userId);
@@ -143,7 +149,10 @@ public class GoogleController {
                     (String) savedUser.get("email"),
                     (String) savedUser.get("nickname"));
 
-            // Refresh Token 생성 및 Redis에 저장
+            // Access Token을 Upstash Redis에 저장
+            accessTokenService.saveAccessToken(userId, jwtToken);
+
+            // Refresh Token 생성 및 Neon DB에 저장
             String refreshToken = refreshTokenService.generateAndSaveRefreshToken(userId);
 
             System.out.println("✅ [구글 로그인] 성공 - User ID: " + userId);
@@ -202,7 +211,7 @@ public class GoogleController {
     // 에러 리다이렉트
     private ResponseEntity<?> redirectToError(String error) {
         String encodedError = URLEncoder.encode(error, StandardCharsets.UTF_8);
-        String errorUrl = frontendLoginCallbackUrl + "/auth/google/error?error=" + encodedError;
+        String errorUrl = frontendLoginCallbackUrl + "/oauth/google/error?error=" + encodedError;
         return ResponseEntity.status(HttpStatus.FOUND)
                 .header("Location", errorUrl)
                 .build();

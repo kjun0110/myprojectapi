@@ -27,16 +27,19 @@ public class OAuthController {
     private final RefreshTokenService refreshTokenService;
     private final TokenBlacklistService tokenBlacklistService;
     private final UserManagementService userManagementService;
+    private final kr.ai.kjun.api.services.oauthservice.jwt.AccessTokenService accessTokenService;
 
     public OAuthController(
             JwtTokenProvider jwtTokenProvider,
             RefreshTokenService refreshTokenService,
             TokenBlacklistService tokenBlacklistService,
-            UserManagementService userManagementService) {
+            UserManagementService userManagementService,
+            kr.ai.kjun.api.services.oauthservice.jwt.AccessTokenService accessTokenService) {
         this.jwtTokenProvider = jwtTokenProvider;
         this.refreshTokenService = refreshTokenService;
         this.tokenBlacklistService = tokenBlacklistService;
         this.userManagementService = userManagementService;
+        this.accessTokenService = accessTokenService;
     }
 
     /**
@@ -99,6 +102,9 @@ public class OAuthController {
                 (String) user.get("email"),
                 (String) user.get("nickname"));
 
+        // Access Token을 Upstash Redis에 저장
+        accessTokenService.saveAccessToken(userId, newAccessToken);
+
         // Refresh Token 갱신 (선택적 - 보안 강화를 위해)
         String newRefreshToken = refreshTokenService.refreshToken(userId);
 
@@ -144,8 +150,11 @@ public class OAuthController {
                     .body(buildErrorResponse("사용자 ID가 필요합니다"));
         }
 
-        // Refresh Token 삭제
+        // Refresh Token 삭제 (Neon DB에서)
         refreshTokenService.deleteRefreshToken(userId);
+
+        // Access Token 삭제 (Upstash Redis에서)
+        accessTokenService.deleteAccessToken(userId);
 
         // Access Token을 블랙리스트에 추가 (제공된 경우)
         String accessToken = (String) request.get("accessToken");
