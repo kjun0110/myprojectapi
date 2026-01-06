@@ -38,14 +38,23 @@ public class RefreshTokenService {
         String refreshToken = UUID.randomUUID().toString();
         LocalDateTime expiresAt = LocalDateTime.now().plusDays(REFRESH_TOKEN_TTL_DAYS);
 
-        // 기존 Refresh Token이 있으면 삭제
-        refreshTokenRepository.deleteByUserId(userId);
-
-        // 새로운 Refresh Token 저장
-        RefreshToken tokenEntity = new RefreshToken();
-        tokenEntity.setUserId(userId);
-        tokenEntity.setToken(refreshToken);
-        tokenEntity.setExpiresAt(expiresAt);
+        // 기존 Refresh Token이 있으면 찾아서 업데이트, 없으면 새로 생성
+        Optional<RefreshToken> existingTokenOpt = refreshTokenRepository.findByUserId(userId);
+        
+        RefreshToken tokenEntity;
+        if (existingTokenOpt.isPresent()) {
+            // 기존 토큰 업데이트
+            tokenEntity = existingTokenOpt.get();
+            tokenEntity.setToken(refreshToken);
+            tokenEntity.setExpiresAt(expiresAt);
+        } else {
+            // 새 토큰 생성
+            tokenEntity = new RefreshToken();
+            tokenEntity.setUserId(userId);
+            tokenEntity.setToken(refreshToken);
+            tokenEntity.setExpiresAt(expiresAt);
+        }
+        
         refreshTokenRepository.save(tokenEntity);
 
         System.out.println("✅ [Refresh Token] 생성 및 Neon DB 저장 완료 - userId: " + userId);
