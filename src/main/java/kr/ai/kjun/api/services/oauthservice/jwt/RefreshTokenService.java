@@ -18,12 +18,11 @@ import java.util.UUID;
 public class RefreshTokenService {
 
     private final RefreshTokenRepository refreshTokenRepository;
+    private final JwtProperties jwtProperties;
 
-    // Refresh Token 기본 TTL: 7일
-    private static final long REFRESH_TOKEN_TTL_DAYS = 7;
-
-    public RefreshTokenService(RefreshTokenRepository refreshTokenRepository) {
+    public RefreshTokenService(RefreshTokenRepository refreshTokenRepository, JwtProperties jwtProperties) {
         this.refreshTokenRepository = refreshTokenRepository;
+        this.jwtProperties = jwtProperties;
     }
 
     /**
@@ -36,7 +35,9 @@ public class RefreshTokenService {
     public String generateAndSaveRefreshToken(Long userId) {
         // UUID 기반 Refresh Token 생성
         String refreshToken = UUID.randomUUID().toString();
-        LocalDateTime expiresAt = LocalDateTime.now().plusDays(REFRESH_TOKEN_TTL_DAYS);
+        // application.yaml의 refresh-expiration 설정값 사용 (밀리초 단위를 초 단위로 변환)
+        long refreshExpirationSeconds = jwtProperties.getRefreshExpiration() / 1000;
+        LocalDateTime expiresAt = LocalDateTime.now().plusSeconds(refreshExpirationSeconds);
 
         // 기존 Refresh Token이 있으면 찾아서 업데이트, 없으면 새로 생성
         Optional<RefreshToken> existingTokenOpt = refreshTokenRepository.findByUserId(userId);

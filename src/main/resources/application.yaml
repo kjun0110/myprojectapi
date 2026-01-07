@@ -53,7 +53,7 @@ google:
 # JWT 설정 (Gateway 및 OAuth Service에서 사용)
 jwt:
   secret: ${JWT_SECRET}
-  expiration: ${JWT_EXPIRATION:86400000} # 기본 24시간 (24시간)
+  expiration: ${JWT_EXPIRATION:900000} # 기본 15분 (15분)
   refresh-expiration: ${JWT_REFRESH_EXPIRATION:604800000} # 기본 7일 (7일)
 
 # Eureka 클라이언트 비활성화
